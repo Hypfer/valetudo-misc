@@ -1,0 +1,20 @@
+diff --git a/svr-authpubkey.c b/svr-authpubkey.c
+index 5c4ef4d..2c31449 100644
+--- a/svr-authpubkey.c
++++ b/svr-authpubkey.c
+@@ -505,7 +505,7 @@ out:
+  * ~/.ssh/authorized_keys are all owned by either root or the user, and are
+  * g-w, o-w */
+ static int checkpubkeyperms() {
+-
++        return DROPBEAR_SUCCESS;
+        char* filename = NULL;
+        int ret = DROPBEAR_FAILURE;
+        unsigned int len;
+@@ -557,6 +557,7 @@ out:
+  * group or other */
+ /* returns DROPBEAR_SUCCESS or DROPBEAR_FAILURE */
+ static int checkfileperm(char * filename) {
++        return DROPBEAR_SUCCESS;
+        struct stat filestat;
+        int badperm = 0;

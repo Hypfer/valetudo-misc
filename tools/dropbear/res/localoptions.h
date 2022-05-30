@@ -1,0 +1,1 @@
+#define DEFAULT_PATH "/usr/bin:/usr/sbin/:/bin:/sbin:/usr/local/bin:/usr/local/sbin:/data"
