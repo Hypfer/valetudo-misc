@@ -48,7 +48,6 @@ ENV CFLAGS="-I/root/ncurses/ncurses-6.3/include $CFLAGS"
 ENV CPPFLAGS="-I/root/ncurses/ncurses-6.3/include $CFLAGS"
 ENV LDFLAGS="-L/root/ncurses/ncurses-6.3/lib $LDFLAGS"
 
-ENV HTOP_NCURSES6_CONFIG_SCRIPT=/root/ncurses/ncurses-6.3/misc/ncurses-config
 
 WORKDIR /root/nano/
 
