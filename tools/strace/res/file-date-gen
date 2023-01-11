@@ -1,0 +1,5 @@
+#!/bin/sh
+
+datestr=`date -u "+%Y-%m-%d"`
+
+exec printf '%s' "$datestr"

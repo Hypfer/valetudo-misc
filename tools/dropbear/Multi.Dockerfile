@@ -45,7 +45,7 @@ RUN patch -p1 < unsafe_permissions.patch --ignore-whitespace
 
 RUN ./configure --host=${TARGET_ARCH} --enable-static --disable-pam --enable-openpty --disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx --disable-loginfunc --disable-pututline --disable-pututxline --disable-zlib --enable-bundled-libtom
 
-RUN make -j4 PROGRAMS="dropbear dbclient scp" MULTI=1
+RUN make -j4 PROGRAMS="dropbear dbclient scp dropbearkey" MULTI=1
 
 
 #RUN /bin/strip /root/dropbear/dropbear /root/dropbear/dbclient /root/dropbear/scp
