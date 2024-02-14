@@ -8,10 +8,6 @@ ARG VERSION
 
 ARG TARGET_ARCH=armv7l-linux
 
-USER root:root
-
-WORKDIR /root/
-
 RUN set -x && \
     apk add --no-cache \
         build-base \
@@ -20,7 +16,10 @@ RUN set -x && \
         python3 \
         autoconf \
         automake \
-        linux-headers git
+        linux-headers git && \
+    mkdir -pv /usr/local/src/ncurses && \
+    mkdir -pv /usr/local/src/htop && \
+    chown -R nobody:nogroup /usr/local/src
 
 # https://gitlab.alpinelinux.org/alpine/aports/-/issues/8626
 ENV CFLAGS=-U_FORTIFY_SOURCE
@@ -41,15 +40,21 @@ ENV AR_host=/usr/bin/ar
 ENV NM_host=/usr/bin/nm
 ENV READELF_host=/usr/bin/readelf
 
-ADD "https://invisible-mirror.net/archives/ncurses/ncurses-6.3.tar.gz" /root/ncurses/ncurses.tar.gz
+ADD --chown=nobody:nogroup "https://invisible-mirror.net/archives/ncurses/ncurses-6.3.tar.gz" /usr/local/src/ncurses/ncurses.tar.gz
 
+USER nobody
 
-WORKDIR /root/ncurses/
+WORKDIR /usr/local/src/ncurses
 
 RUN set -x && \
+    pwd && \
+    id && \
+    ls -ld . && \
+    ls -ld /usr/local/src && \
+    ls -ld /usr/local/src/ncurses && \
     tar xf ./ncurses.tar.gz
 
-WORKDIR /root/ncurses/ncurses-6.3/
+WORKDIR /usr/local/src/ncurses/ncurses-6.3/
 
 RUN set -x && \
     ./configure \
@@ -60,27 +65,27 @@ RUN set -x && \
         --without-adai && \
     make -j4
 
-ENV CFLAGS="-I/root/ncurses/ncurses-6.3/include $CFLAGS"
-ENV CPPFLAGS="-I/root/ncurses/ncurses-6.3/include $CFLAGS"
-ENV LDFLAGS="-L/root/ncurses/ncurses-6.3/lib $LDFLAGS"
+ENV CFLAGS="-I/usr/local/src/ncurses/ncurses-6.3/include $CFLAGS"
+ENV CPPFLAGS="-I/usr/local/src/ncurses/ncurses-6.3/include $CFLAGS"
+ENV LDFLAGS="-L/usr/local/src/ncurses/ncurses-6.3/lib $LDFLAGS"
 
-ENV HTOP_NCURSES6_CONFIG_SCRIPT=/root/ncurses/ncurses-6.3/misc/ncurses-config
+ENV HTOP_NCURSES6_CONFIG_SCRIPT=/usr/local/src/ncurses/ncurses-6.3/misc/ncurses-config
 
-WORKDIR /root/htop/
+WORKDIR /usr/local/src/htop/
 
-ADD "https://github.com/htop-dev/htop/archive/${VERSION}.tar.gz" /root/htop/htop.tar.gz
+ADD --chown=nobody:nogroup "https://github.com/htop-dev/htop/archive/${VERSION}.tar.gz" /usr/local/src/htop/htop.tar.gz
 
 RUN set -x && \
     tar xf ./htop.tar.gz
 
-WORKDIR /root/htop/htop-${VERSION}
+WORKDIR /usr/local/src/htop/htop-${VERSION}
 
 RUN set -x && \
     ./autogen.sh && \
     ./configure --enable-static --disable-unicode --host=${TARGET_ARCH} && \
     make -j4 && \
-    /bin/strip /root/htop/htop-${VERSION}/htop
+    /bin/strip /usr/local/src/htop/htop-${VERSION}/htop
 
 FROM scratch as export
 ARG VERSION
-COPY --from=builder /root/htop/htop-${VERSION}/htop .
+COPY --from=builder /usr/local/src/htop/htop-${VERSION}/htop .
