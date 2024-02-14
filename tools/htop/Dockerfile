@@ -22,8 +22,6 @@ RUN set -x && \
         automake \
         linux-headers git
 
-#upx
-
 # https://gitlab.alpinelinux.org/alpine/aports/-/issues/8626
 ENV CFLAGS=-U_FORTIFY_SOURCE
 ENV CFLAGS_host=-U_FORTIFY_SOURCE
@@ -79,15 +77,9 @@ WORKDIR /root/htop/htop-${VERSION}
 
 RUN set -x && \
     ./autogen.sh && \
-    ./configure --enable-static --disable-unicode --host=${TARGET_ARCH}
-
-RUN set -x && \
-    make -j4
-
-RUN set -x && \
+    ./configure --enable-static --disable-unicode --host=${TARGET_ARCH} && \
+    make -j4 && \
     /bin/strip /root/htop/htop-${VERSION}/htop
-
-#RUN upx --brute /root/htop/htop-${VERSION}/htop
 
 FROM scratch as export
 ARG VERSION
