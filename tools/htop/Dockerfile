@@ -47,11 +47,6 @@ USER nobody
 WORKDIR /usr/local/src/ncurses
 
 RUN set -x && \
-    pwd && \
-    id && \
-    ls -ld . && \
-    ls -ld /usr/local/src && \
-    ls -ld /usr/local/src/ncurses && \
     tar xf ./ncurses.tar.gz
 
 WORKDIR /usr/local/src/ncurses/ncurses-6.3/
