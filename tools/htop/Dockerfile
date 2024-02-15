@@ -1,16 +1,25 @@
 ARG HOST_ARCH=i686
 ARG TARGET_TRIPLE=armv7l-linux-musleabihf
 
-FROM muslcc/$HOST_ARCH:$TARGET_TRIPLE
-
 ARG VERSION=3.2.0
+
+FROM muslcc/$HOST_ARCH:$TARGET_TRIPLE as builder
+ARG VERSION
+
 ARG TARGET_ARCH=armv7l-linux
 
-USER root:root
-
-WORKDIR /root/
-
-RUN apk add --no-cache build-base ncurses-dev ncurses-libs python3 autoconf automake linux-headers git upx
+RUN set -x && \
+    apk add --no-cache \
+        build-base \
+        ncurses-dev \
+        ncurses-libs \
+        python3 \
+        autoconf \
+        automake \
+        linux-headers git && \
+    mkdir -pv /usr/local/src/ncurses && \
+    mkdir -pv /usr/local/src/htop && \
+    chown -R nobody:nogroup /usr/local/src
 
 # https://gitlab.alpinelinux.org/alpine/aports/-/issues/8626
 ENV CFLAGS=-U_FORTIFY_SOURCE
@@ -31,39 +40,47 @@ ENV AR_host=/usr/bin/ar
 ENV NM_host=/usr/bin/nm
 ENV READELF_host=/usr/bin/readelf
 
-ADD "https://invisible-mirror.net/archives/ncurses/ncurses-6.3.tar.gz" /root/ncurses/ncurses.tar.gz
+ADD --chown=nobody:nogroup "https://invisible-mirror.net/archives/ncurses/ncurses-6.3.tar.gz" /usr/local/src/ncurses/ncurses.tar.gz
 
+USER nobody
 
-WORKDIR /root/ncurses/
+WORKDIR /usr/local/src/ncurses
 
-RUN tar xf ./ncurses.tar.gz
+RUN set -x && \
+    tar xf ./ncurses.tar.gz
 
-WORKDIR /root/ncurses/ncurses-6.3/
+WORKDIR /usr/local/src/ncurses/ncurses-6.3/
 
-RUN ./configure --with-normal --host=${TARGET_ARCH} --with-terminfo-dirs="/etc/terminfo:/usr/share/terminfo:/lib/terminfo:/usr/lib/terminfo"  --without-tests --without-ada
+RUN set -x && \
+    ./configure \
+        --with-normal \
+        --host=${TARGET_ARCH} \
+        --with-terminfo-dirs="/etc/terminfo:/usr/share/terminfo:/lib/terminfo:/usr/lib/terminfo"  \
+        --without-tests \
+        --without-adai && \
+    make -j4
 
-RUN make -j4
+ENV CFLAGS="-I/usr/local/src/ncurses/ncurses-6.3/include $CFLAGS"
+ENV CPPFLAGS="-I/usr/local/src/ncurses/ncurses-6.3/include $CFLAGS"
+ENV LDFLAGS="-L/usr/local/src/ncurses/ncurses-6.3/lib $LDFLAGS"
 
-ENV CFLAGS="-I/root/ncurses/ncurses-6.3/include $CFLAGS"
-ENV CPPFLAGS="-I/root/ncurses/ncurses-6.3/include $CFLAGS"
-ENV LDFLAGS="-L/root/ncurses/ncurses-6.3/lib $LDFLAGS"
+ENV HTOP_NCURSES6_CONFIG_SCRIPT=/usr/local/src/ncurses/ncurses-6.3/misc/ncurses-config
 
-ENV HTOP_NCURSES6_CONFIG_SCRIPT=/root/ncurses/ncurses-6.3/misc/ncurses-config
+WORKDIR /usr/local/src/htop/
 
-WORKDIR /root/htop/
+ADD --chown=nobody:nogroup "https://github.com/htop-dev/htop/archive/${VERSION}.tar.gz" /usr/local/src/htop/htop.tar.gz
 
-ADD "https://github.com/htop-dev/htop/archive/${VERSION}.tar.gz" /root/htop/htop.tar.gz
+RUN set -x && \
+    tar xf ./htop.tar.gz
 
-RUN tar xf ./htop.tar.gz
+WORKDIR /usr/local/src/htop/htop-${VERSION}
 
-WORKDIR /root/htop/htop-${VERSION}
+RUN set -x && \
+    ./autogen.sh && \
+    ./configure --enable-static --disable-unicode --host=${TARGET_ARCH} && \
+    make -j4 && \
+    /bin/strip /usr/local/src/htop/htop-${VERSION}/htop
 
-RUN ./autogen.sh
-
-RUN ./configure --enable-static --disable-unicode --host=${TARGET_ARCH}
-
-RUN make -j4
-
-RUN /bin/strip /root/htop/htop-${VERSION}/htop
-
-#RUN upx --brute /root/htop/htop-${VERSION}/htop
+FROM scratch as export
+ARG VERSION
+COPY --from=builder /usr/local/src/htop/htop-${VERSION}/htop .
